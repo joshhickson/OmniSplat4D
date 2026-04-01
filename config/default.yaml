@@ -1,0 +1,72 @@
+# OmniSplat4D — Default Pipeline Configuration
+# All values match the Pydantic model defaults in core/config.py.
+# Override specific fields in a hardware profile YAML and pass it via --profile.
+
+workspace_dir: workspace
+capture_route: stick   # "stick" or "drone"
+device: cuda
+seed: 42
+
+ingest:
+  fps_target: 2.0
+  laplacian_threshold: 100.0
+  max_image_size: 1024
+  planar_fov_deg: 90.0
+  planar_width: 1024
+  planar_height: 1024
+  num_cameras: 8
+
+segment:
+  yolo_model: yolov8n.pt
+  sam_checkpoint: sam2.1_hiera_tiny.pt
+  sam_config: sam2.1_hiera_t.yaml
+  sam_max_vision_cache: 1
+  sam_storage_device: cpu
+  sam_inference_device: cpu
+  iou_reset_threshold: 0.5
+  optical_flow_method: farneback
+
+colmap:
+  route: stick
+  matcher: sequential
+  sequential_overlap: 10
+  vocab_tree_neighbors: 20
+  vocab_tree_path: null
+  colmap_binary: colmap
+  skip_feature_extraction: true
+
+static_train:
+  sh_degree: 1
+  packed: true
+  densify_grad_threshold: 0.0004
+  max_iterations: 30000
+  learning_rate_positions: 0.00016
+  learning_rate_sh: 0.0025
+  learning_rate_opacity: 0.05
+  learning_rate_scale: 0.005
+  learning_rate_rotation: 0.001
+  prune_interval: 1000
+  output_format: spz
+
+dynamic_train:
+  window_size: 30
+  window_overlap: 5
+  consistency_weight: 0.1
+  dc_color_only: true
+  ac_mlp_hidden_dim: 64
+  deformation_mlp_hidden_dim: 128
+  entropy_weight: 0.01
+  opacity_prune_threshold: 0.005
+  prune_interval: 1000
+  max_iterations_per_window: 10000
+  checkpoint_fp16: true
+
+composite:
+  tile_size: 16
+  sort_key_bits: 64
+
+export:
+  formats:
+    - spz
+  stream_chunk_size_mb: 50
+  onnx_opset: 17

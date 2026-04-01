@@ -1,0 +1,34 @@
+# Lambda Labs A100 80GB — Cloud scaling profile
+# Unlocks higher-quality settings not feasible on 12GB local hardware.
+# Use for Phase 4 high-fidelity production runs.
+
+device: cuda
+capture_route: drone   # Drone route typical for cloud batch jobs
+
+static_train:
+  sh_degree: 3         # Full SH Degree 3 for enhanced view-dependent reflections
+  packed: true
+  densify_grad_threshold: 0.0002  # Default (lower threshold = more primitives, higher quality)
+  max_iterations: 50000
+
+segment:
+  sam_storage_device: cuda  # 80GB VRAM can accommodate SAM temporal state on GPU
+  sam_inference_device: cuda
+  sam_max_vision_cache: 8   # Allow larger cache for multi-subject scenes
+
+colmap:
+  matcher: vocab_tree
+  vocab_tree_neighbors: 50  # More neighbours = better matching on large scenes
+
+dynamic_train:
+  window_size: 60           # Larger windows on high-VRAM hardware
+  max_iterations_per_window: 30000
+  ac_mlp_hidden_dim: 128
+  deformation_mlp_hidden_dim: 256
+  checkpoint_fp16: false    # Keep FP32 during training; convert to FP16 at export
+
+export:
+  formats:
+    - spz
+    - ogc_3dtiles
+    - unity_package

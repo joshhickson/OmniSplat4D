@@ -1,0 +1,22 @@
+# RTX 3060 12GB — Local prototyping hardware profile
+# Applies VRAM-conservative overrides on top of config/default.yaml.
+# All values here are the absolute ceiling for 12GB VRAM / 32GB DDR3 RAM.
+# DO NOT increase sh_degree, remove packed, or change sam_storage_device to cuda
+# on this hardware profile without also validating VRAM headroom.
+
+static_train:
+  sh_degree: 1         # SH Degree 1 only — Degree 3 is 4× larger, guaranteed OOM
+  packed: true         # Required to avoid sparse gradient overhead on 12GB
+  densify_grad_threshold: 0.0004  # Elevated to cap primitive count
+
+segment:
+  sam_storage_device: cpu   # SAM temporal state on host RAM — not negotiable on 12GB
+  sam_inference_device: cpu
+  sam_max_vision_cache: 1
+
+colmap:
+  vocab_tree_neighbors: 20  # Capped to prevent 32GB DDR3 RAM exhaustion
+
+dynamic_train:
+  checkpoint_fp16: true     # Always FP16 on this hardware
+  max_iterations_per_window: 10000

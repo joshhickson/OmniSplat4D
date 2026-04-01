@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "omnisplat4d"
+version = "0.1.0"
+description = "4D volumetric environments from 360-degree equirectangular video"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+# Core runtime dependencies — always installed
+dependencies = [
+    "torch>=2.2.0",
+    "torchvision>=0.17.0",
+    "gsplat>=1.0.0",
+    "numpy>=1.26.0",
+    "opencv-python>=4.9.0",
+    "scipy>=1.12.0",
+    "pydantic>=2.6.0",
+    "pyyaml>=6.0.1",
+    "onnx>=1.16.0",
+    "onnxruntime-gpu>=1.17.0",
+    "Pillow>=10.2.0",
+]
+
+[project.optional-dependencies]
+# Phase 1/2 — Stick Route masking cascade
+segment = [
+    "ultralytics>=8.1.0",
+    "sam-2>=1.0",
+]
+
+# Phase 1 — video ingestion
+ingest = [
+    "ffmpeg-python>=0.2.0",
+]
+
+# Development tooling
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+    "types-PyYAML>=6.0.12",
+]
+
+# Full install (all phases)
+all = [
+    "omnisplat4d[segment,ingest]",
+]
+
+[project.scripts]
+omnisplat4d = "omnisplat4d.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/omnisplat4d"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+src = ["src"]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+mypy_path = "src"
+strict = false
+ignore_missing_imports = true
