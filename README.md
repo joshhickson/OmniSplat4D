@@ -1,6 +1,6 @@
 # OmniSplat4D
 
-End-to-end pipeline for generating free-viewpoint 4D volumetric environments from 360° equirectangular video, designed to run on a single consumer GPU (RTX 3060 12GB).
+End-to-end pipeline for generating free-viewpoint 4D volumetric environments from 360° equirectangular video.
 
 The pipeline decomposes raw 360° footage into a static 3D background (3DGS) and dynamic 4D keyframable subjects (4DGS), then composites them in real-time via unified CUDA depth-sorting. Output is a set of streamable `.spz` geometry files and `.onnx` neural network binaries that render in WebGL or Unity without any cloud dependency at playback time.
 
