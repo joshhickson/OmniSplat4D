@@ -6,6 +6,33 @@ The pipeline decomposes raw 360° footage into a static 3D background (3DGS) and
 
 ---
 
+## A Note to the CorridorKey Community
+
+If you found this from the CorridorKey Discord or GitHub — this section is written for you.
+
+[CorridorKey](https://github.com/nikopueringer/CorridorKey.git) is doing something genuinely important: building a production-quality, open-source green screen solution that anyone can run without a render farm. What happened in the week after its release — the community driving VRAM down from 23GB to 8GB in a single day, the DaVinci Resolve plugin appearing on day five, the Nuke integration, the volunteer GPU cloud — is exactly what open source is supposed to look like. We've been watching it closely.
+
+OmniSplat4D is being built from the opposite direction. Where CorridorKey is a 2D color separation tool that produces extraordinary alpha mattes, OmniSplat4D is a 3D geometric reconstruction pipeline that produces explicit scene geometry — a static background as a 3D Gaussian Splat, and a dynamic subject as a 4D Gaussian Splat with a continuous deformation field. Both projects run on consumer GPUs. Both are fully open source. And we believe they are directly complementary in ways that address some of the specific gaps the CorridorKey community has already identified.
+
+**Three concrete intersections we are building toward:**
+
+**1. Geometry-derived hint masks — no BiRefNet required, no green screen required.**
+CorridorKey's inference model accepts a coarse alpha hint and refines it into a sub-pixel accurate linear matte. Right now that hint comes from BiRefNet, GVM, or a manual paint — all of which are learned priors guessing at subject boundaries from color and texture alone. OmniSplat4D's Phase 1 trains an explicit 3D Gaussian reconstruction of the static background. Once that reconstruction exists, we can render a synthetic background at any camera pose and subtract it from the original footage — pixels that deviate from the render are the dynamic subject. That difference map is a hint derived from actual scene geometry, not a learned guess. It requires no green screen, no special lighting, and no additional model. It feeds directly into CorridorKey's existing hint input slot.
+
+**2. Temporal alpha stabilization from 4D Gaussian opacity fields.**
+The stress test in Niko's recent video identified temporal flicker at silhouette edges as a real concern. This is an inherent limitation of per-frame neural inference: each frame is processed independently, so alpha values at semi-transparent boundaries have no inter-frame constraint. OmniSplat4D's Phase 2 fits a 4D Gaussian representation to the dynamic subject with a temporal consistency loss enforced across sliding window boundaries. The Gaussian rasterizer produces per-pixel accumulated opacity as a geometric output — not inferred from color, but derived from the 3D structure of the primitives. Re-deriving alpha from the 4D Gaussian field instead of CorridorKey's per-frame estimate would produce a temporally smooth alpha channel by geometric construction. The two outputs are complementary: CorridorKey's continuous linear alpha at edges, stabilized over time by the 4DGS opacity field.
+
+**3. Depth-correct compositing at the Gaussian level.**
+The final compositing step in CorridorKey's pipeline is 2D layer stacking — foreground plate over background plate. OmniSplat4D's Phase 3 merges static background Gaussians and dynamic subject Gaussians into a single primitive set before rasterization, then radix-sorts them by physical depth. The result is geometrically correct occlusion, parallax, and free viewpoint rendering without rotoscope, without Z-buffer, and without a render farm. If the destination background is a 3DGS and the foreground subject is a 4DGS, the composite is computed from 3D geometry — not from pixel layers.
+
+**The long-term vision, stated plainly:** a workflow where OmniSplat4D reconstructs the scene geometry and CorridorKey handles the color unmixing, and together they produce a composite that is depth-correct, temporally stable, and renderable from any viewpoint on a single consumer GPU — with no cloud dependency at playback time and no green screen required at capture time.
+
+We have written a detailed research document covering the feasibility analysis, the specific structural intersections, and the open questions that still need to be answered: [`docs/research/long_term_vision_corridorkey_integration.md`](docs/research/long_term_vision_corridorkey_integration.md). That document is honest about what is implemented, what is stubbed, and what is still research. Read it if you want the full picture.
+
+This project is being developed openly. If you are working on CorridorKey and see something here worth building on, we want to hear from you.
+
+---
+
 ## Hardware Philosophy
 
 | Target | Spec |
@@ -348,3 +375,4 @@ Full technical rationale for every implementation decision is documented in the 
 
 - [`docs/research/phase1_3DGS_static.md`](docs/research/phase1_3DGS_static.md) — Operator masking cascade, equirect-to-planar mathematics, COLMAP optimisations, gsplat VRAM hyperparameters, Grendel distributed training
 - [`docs/research/phase2_4DGS_dynamic.md`](docs/research/phase2_4DGS_dynamic.md) — Dynamic subject isolation, SWinGS temporal windowing, MEGA colour decomposition, entropy-constrained pruning, unified CUDA depth-sorting, SPZ/ONNX streaming architecture
+- [`docs/research/long_term_vision_corridorkey_integration.md`](docs/research/long_term_vision_corridorkey_integration.md) — Long-term speculative vision: OmniSplat4D as a 3D geometric foundation for production compositing pipelines; integration analysis with CorridorKey; open research questions. **Not a sprint deliverable.**
