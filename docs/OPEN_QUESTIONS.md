@@ -85,15 +85,47 @@ These are documented in `docs/research/long_term_vision_corridorkey_integration.
 
 ---
 
+### 5. Z-popping at the VFX supervisor bar
+
+**Source:** External review (texasgreentea, roomscale VR documentary production background)
+
+**The problem:** Z-popping — the shimmery tile-order instability when Gaussian sort keys flip between frames as the camera moves — is a known artifact of tile-based Gaussian rasterization. OmniSplat4D's unified radix sort (Phase 3) addresses depth-correct occlusion but does not eliminate z-popping at Gaussian boundaries. Based on production experience running dailies past professional VFX supervisors and producers, this artifact class alone is likely unacceptable. The tolerance level is described as: essentially no eye-catching blemishes. Engineers tend to set a much lower bar than supervisors will accept.
+
+**Current status:** Uncharacterized. The severity of z-popping in OmniSplat4D's output is unknown until `render_frame()` is implemented and real footage is processed. The entropy pruning in `train/pruner.py` reduces stray Gaussians but does not target z-popping specifically.
+
+---
+
+### 6. Temporal coherence at production scale (thousands of frames)
+
+**Source:** External review (texasgreentea)
+
+**The problem:** Single-frame splats already require manual cleanup comparable to messy photogrammetry. For 4DGS, that cleanup multiplies by frame count — potentially thousands of frames. This is unworkable as a manual process. The SWinGS sliding-window approach enforces temporal consistency across 30-frame windows with 5-frame overlap, but whether this produces acceptable temporal stability across a full 4DGS sequence of 1,000+ frames without accumulated drift or artifact propagation is entirely unvalidated. A model that is good at automated cleanup and doesn't have to redo most work each frame is described as the key enabler for practical 4DGS production use.
+
+**Current status:** Unvalidated. `dynamic_trainer.py` is a stub. The assumption that 5-frame overlap windows prevent drift across a full sequence has not been tested on any footage.
+
+---
+
+### 7. The concrete quality benchmark to clear
+
+**Source:** External review (texasgreentea)
+
+**The benchmark:** Splats need to beat the 10-year-old best-in-class affordable approach for XR production: photogrammetry scenery with manual cleanup, custom shader work, and stereo billboard video cards for hero subjects. Stereo billboard hero subjects break immersion when the audience pays attention to their feet. Splats eliminate the billboard breakage by construction — but only if they don't introduce heavier artifacting (z-popping, stray Gaussians, off speculars) that supervisors attack next.
+
+**What this means for the pipeline:** The quality improvement over billboards at the feet is real and meaningful. But it only counts if the artifact profile from the splat pipeline is cleaner than what billboard subjects introduce at seam edges. The stationary 360 viewing case is validated as achievable by an experienced XR practitioner. The roomscale case remains the harder and more valuable target.
+
+**Current status:** No output yet to evaluate against this benchmark.
+
+---
+
 ## Questions That Require External Expertise
 
 These cannot be resolved from inside the codebase. They require either production pipeline experience or empirical testing on real hardware.
 
 - **What does "acceptable" parallax look like in a game engine VFX/XR context?** The quality bar for a compositing depth-map use case vs. a roomscale viewer use case vs. a flat WebGL viewer use case are different. External input from practitioners in each context needed.
 
-- **What viewing modality is actually the target?** Full 6DOF roomscale, seated limited-parallax HMD, locked-camera 360 WebGL, or a screened flat-panel free-viewport experience each have different tolerances for the artifact classes this pipeline will produce.
+- **What viewing modality is actually the target?** Full 6DOF roomscale, seated limited-parallax HMD, locked-camera 360 WebGL, or a screened flat-panel free-viewport experience each have different tolerances for the artifact classes this pipeline will produce. Note: external reviewer with roomscale VR documentary production background states roomscale is the only form that will retain the XR "wow factor" for XR 2.0.
 
-- **What happened to equirectangular-to-lightfield conversion pipelines?** A related prior art path. Understanding where those efforts stalled and why would inform what failure modes to anticipate.
+- **What happened to equirectangular-to-lightfield conversion pipelines?** Partial answer received: too many blemishes requiring manual cleanup, prohibitive data footprint, effectively shelved when NeRFs and splats arrived. The industry consensus is that splats are the easier path to the same goal. Flat-to-splat on legacy video and 360 footage remains unsolved by most of the field.
 
 ---
 
