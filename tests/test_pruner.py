@@ -62,8 +62,11 @@ class TestEntropyRegularizationLoss:
         assert not torch.isnan(opacities.grad).any()
 
     def test_loss_decreases_when_pushed_binary(self) -> None:
-        """Gradient descent on entropy loss should push logits away from 0."""
-        opacities = torch.zeros(10, 1, requires_grad=True)
+        """Gradient descent on entropy loss should push logits away from 0.5 probability."""
+        # Exact zero logits are a stationary point for entropy under sigmoid parameterization,
+        # so we use a tiny perturbation to test the expected descent behavior.
+        torch.manual_seed(0)
+        opacities = (0.01 * torch.randn(10, 1)).requires_grad_()
         optimizer = torch.optim.SGD([opacities], lr=1.0)
         initial_loss = entropy_regularization_loss(opacities).item()
         for _ in range(20):
