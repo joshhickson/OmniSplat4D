@@ -394,7 +394,7 @@ def train_static(
                     )
 
             # Required VRAM invariant: flush after every densification step.
-            flush_cuda_cache()
+            torch.cuda.empty_cache()
 
         if step % 1000 == 0:
             vram_mb = get_vram_used_bytes() / 1024**2
